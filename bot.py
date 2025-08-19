@@ -2,15 +2,16 @@ import os
 import time
 import random
 import schedule
+import threading
 from telegram import Bot
+from flask import Flask
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-CHANNEL_ID = int(os.getenv("CHANNEL_ID"))  # Example: -1001234567890
+CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
 
 bot = Bot(token=BOT_TOKEN)
 
 def get_messages():
-    """Load messages from messages.txt"""
     try:
         with open("messages.txt", "r", encoding="utf-8") as f:
             return [line.strip() for line in f if line.strip()]
@@ -19,15 +20,27 @@ def get_messages():
 
 def send_message():
     messages = get_messages()
-    text = random.choice(messages)  # Pick one random message
+    text = random.choice(messages)
     bot.send_message(chat_id=CHANNEL_ID, text=text)
     print(f"Sent: {text}")
 
-# Schedule: send every hour
+# Schedule: every hour
 schedule.every(1).hours.do(send_message)
 
-print("Bot is running...")
+def run_schedule():
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
 
-while True:
-    schedule.run_pending()
-    time.sleep(1)
+# Flask app (dummy web server to keep Railway alive)
+app = Flask("")
+
+@app.route("/")
+def home():
+    return "Bot is running!"
+
+if __name__ == "__main__":
+    # Start schedule in a separate thread
+    threading.Thread(target=run_schedule).start()
+    # Start Flask web server
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
