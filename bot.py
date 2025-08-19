@@ -32,7 +32,7 @@ def send_message():
             print(f"Failed to send to {channel_id}: {e}")
 
 # Schedule: every hour (change as needed)
-schedule.every(1).minutes.do(send_message)
+schedule.every(5).minutes.do(send_message)
 
 def run_schedule():
     while True:
