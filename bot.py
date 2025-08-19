@@ -8,7 +8,7 @@ from flask import Flask
 from waitress import serve
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-# Add multiple channel IDs separated by commas in Railway env variable
+# Multiple channel IDs separated by commas
 CHANNEL_IDS = [int(x) for x in os.getenv("CHANNEL_IDS", "").split(",")]
 
 bot = Bot(token=BOT_TOKEN)
@@ -32,7 +32,7 @@ def send_message():
             print(f"Failed to send to {channel_id}: {e}")
 
 # Schedule: every hour (change as needed)
-schedule.every(5).minutes.do(send_message)
+schedule.every(1).hours.do(send_message)
 
 def run_schedule():
     while True:
@@ -47,7 +47,7 @@ def home():
     return "Bot is running!"
 
 if __name__ == "__main__":
-    # Start scheduler in a separate thread
-    threading.Thread(target=run_schedule).start()
-    # Run Flask via Waitress (production-ready)
+    # Start scheduler in a separate daemon thread
+    threading.Thread(target=run_schedule, daemon=True).start()
+    # Start Waitress (production server)
     serve(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
