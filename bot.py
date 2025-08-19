@@ -7,12 +7,13 @@ from telegram import Bot, error
 from flask import Flask
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-# List multiple channel IDs separated by commas in Railway env variable
+# Add multiple channel IDs separated by commas in Railway env variable
 CHANNEL_IDS = [int(x) for x in os.getenv("CHANNEL_IDS", "").split(",")]
 
 bot = Bot(token=BOT_TOKEN)
 
 def get_messages():
+    """Load messages from messages.txt"""
     try:
         with open("messages.txt", "r", encoding="utf-8") as f:
             return [line.strip() for line in f if line.strip()]
@@ -45,5 +46,7 @@ def home():
     return "Bot is running!"
 
 if __name__ == "__main__":
+    # Start scheduler in a separate thread
     threading.Thread(target=run_schedule).start()
+    # Start Flask web server
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
