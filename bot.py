@@ -29,7 +29,7 @@ def send_message():
         print(f"Failed to send message: {e}")
 
 # Schedule: every hour (change as needed)
-schedule.every(60).seconds.do(send_message)
+schedule.every(360).seconds.do(send_message)
 
 def run_schedule():
     while True:
