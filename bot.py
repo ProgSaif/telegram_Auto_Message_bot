@@ -5,6 +5,7 @@ import schedule
 import threading
 from telegram import Bot, error
 from flask import Flask
+from waitress import serve
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 # Add multiple channel IDs separated by commas in Railway env variable
@@ -30,7 +31,7 @@ def send_message():
         except error.BadRequest as e:
             print(f"Failed to send to {channel_id}: {e}")
 
-# Schedule: every hour
+# Schedule: every hour (change as needed)
 schedule.every(1).hours.do(send_message)
 
 def run_schedule():
@@ -38,7 +39,7 @@ def run_schedule():
         schedule.run_pending()
         time.sleep(1)
 
-# Flask web server to keep Railway alive
+# Flask web server to keep Railway container alive
 app = Flask("")
 
 @app.route("/")
@@ -48,5 +49,5 @@ def home():
 if __name__ == "__main__":
     # Start scheduler in a separate thread
     threading.Thread(target=run_schedule).start()
-    # Start Flask web server
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+    # Run Flask via Waitress (production-ready)
+    serve(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
