@@ -25,7 +25,7 @@ def send_message():
     print(f"Sent: {text}")
 
 # Schedule: every hour
-schedule.every(1).hours.do(send_message)
+schedule.every(5).seconds.do(send_message)
 
 def run_schedule():
     while True:
