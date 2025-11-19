@@ -23,6 +23,10 @@ for x in raw_ids.split(","):
 if not CHANNEL_IDS:
     raise ValueError("CHANNEL_IDS not set correctly. Must be numeric IDs.")
 
+# Interval in minutes (default 10)
+INTERVAL_MINUTES = int(os.getenv("INTERVAL_MINUTES", 10))
+DELETE_DELAY_MINUTES = int(os.getenv("DELETE_DELAY_MINUTES", 10))  # default 10 min deletion
+
 bot = Bot(token=BOT_TOKEN)
 
 # ---------------------
@@ -39,7 +43,7 @@ def get_messages():
 # ---------------------
 # Async delete message after delay
 # ---------------------
-async def delete_later(chat_id, message_id, delay=60):
+async def delete_later(chat_id, message_id, delay=600):
     await asyncio.sleep(delay)
     try:
         await bot.delete_message(chat_id=chat_id, message_id=message_id)
@@ -61,7 +65,7 @@ async def send_message_async():
             msg = await bot.send_message(chat_id=channel_id, text=text)
             print(f"Sent to {channel_id}: {text}")
             # Schedule deletion in background
-            asyncio.create_task(delete_later(channel_id, msg.message_id, delay=600))
+            asyncio.create_task(delete_later(channel_id, msg.message_id, delay=DELETE_DELAY_MINUTES * 60))
         except Exception as e:
             print(f"Failed to send to {channel_id}: {e}")
 
@@ -75,7 +79,7 @@ def run_schedule():
     async def job():
         while True:
             await send_message_async()
-            await asyncio.sleep(600)  # every 10 minutes, adjust as needed
+            await asyncio.sleep(INTERVAL_MINUTES * 60)  # wait arbitrary interval
 
     loop.run_until_complete(job())
 
