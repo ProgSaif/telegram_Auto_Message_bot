@@ -40,7 +40,7 @@ def get_messages():
 # ---------------------
 # Delete message after delay (10 minutes)
 # ---------------------
-def delete_later(chat_id, message_id, delay=600):
+def delete_later(chat_id, message_id, delay=60):
     """Delete message after delay (600 sec = 10 minutes)"""
     def worker():
         time.sleep(delay)
@@ -68,7 +68,7 @@ def send_message():
             print(f"Sent to {channel_id}: {text}")
 
             # Delete the message after 10 minutes
-            delete_later(channel_id, msg.message_id, delay=600)
+            delete_later(channel_id, msg.message_id, delay=60)
 
         except error.TelegramError as e:
             print(f"Failed to send to {channel_id}: {e}")
@@ -76,7 +76,7 @@ def send_message():
 # ---------------------
 # Scheduler
 # ---------------------
-schedule.every(10).minutes.do(send_message)  # Change interval if needed
+schedule.every(2).minutes.do(send_message)  # Change interval if needed
 
 def run_schedule():
     while True:
