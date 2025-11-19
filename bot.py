@@ -39,7 +39,7 @@ def get_messages():
 # ---------------------
 # Async delete message after delay
 # ---------------------
-async def delete_later(chat_id, message_id, delay=600):
+async def delete_later(chat_id, message_id, delay=60):
     await asyncio.sleep(delay)
     try:
         await bot.delete_message(chat_id=chat_id, message_id=message_id)
