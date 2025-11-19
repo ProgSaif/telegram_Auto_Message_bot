@@ -1,9 +1,8 @@
 import os
-import time
 import random
-import schedule
+import asyncio
 import threading
-from telegram import Bot, error
+from telegram import Bot
 from flask import Flask
 from waitress import serve
 
@@ -38,53 +37,50 @@ def get_messages():
         return ["No messages found! Please add text in messages.txt"]
 
 # ---------------------
-# Delete message after delay (10 minutes)
+# Async delete message after delay
 # ---------------------
-def delete_later(chat_id, message_id, delay=60):
-    """Delete message after delay (600 sec = 10 minutes)"""
-    def worker():
-        time.sleep(delay)
-        try:
-            bot.delete_message(chat_id=chat_id, message_id=message_id)
-            print(f"Deleted message {message_id} from {chat_id}")
-        except Exception as e:
-            print(f"Failed to delete message {message_id}: {e}")
-    threading.Thread(target=worker, daemon=True).start()
+async def delete_later(chat_id, message_id, delay=600):
+    await asyncio.sleep(delay)
+    try:
+        await bot.delete_message(chat_id=chat_id, message_id=message_id)
+        print(f"Deleted message {message_id} from {chat_id}")
+    except Exception as e:
+        print(f"Failed to delete message {message_id}: {e}")
 
 # ---------------------
-# Send message and schedule deletion
+# Async send messages
 # ---------------------
-def send_message():
+async def send_message_async():
     messages = get_messages()
     if not messages:
-        print("No messages found to send.")
         return
-
     text = random.choice(messages)
 
     for channel_id in CHANNEL_IDS:
         try:
-            msg = bot.send_message(chat_id=channel_id, text=text)
+            msg = await bot.send_message(chat_id=channel_id, text=text)
             print(f"Sent to {channel_id}: {text}")
-
-            # Delete the message after 10 minutes
-            delete_later(channel_id, msg.message_id, delay=60)
-
-        except error.TelegramError as e:
+            # Schedule deletion in background
+            asyncio.create_task(delete_later(channel_id, msg.message_id, delay=600))
+        except Exception as e:
             print(f"Failed to send to {channel_id}: {e}")
 
 # ---------------------
-# Scheduler
+# Async scheduler
 # ---------------------
-schedule.every(2).minutes.do(send_message)  # Change interval if needed
-
 def run_schedule():
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    async def job():
+        while True:
+            await send_message_async()
+            await asyncio.sleep(600)  # every 10 minutes, adjust as needed
+
+    loop.run_until_complete(job())
 
 # ---------------------
-# Flask keep-alive server
+# Flask server (keep-alive)
 # ---------------------
 app = Flask("")
 
@@ -96,5 +92,7 @@ def home():
 # Start everything
 # ---------------------
 if __name__ == "__main__":
+    # Start scheduler in a separate thread
     threading.Thread(target=run_schedule, daemon=True).start()
+    # Start Waitress server
     serve(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
