@@ -11,9 +11,18 @@ from waitress import serve
 # Load environment variables
 # ---------------------
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+if not BOT_TOKEN:
+    raise ValueError("BOT_TOKEN is not set in Railway environment variables")
 
-# Multiple channel IDs separated by commas
-CHANNEL_IDS = [int(x) for x in os.getenv("CHANNEL_IDS", "").split(",") if x.strip().isdigit()]
+raw_ids = os.getenv("CHANNEL_IDS", "")
+CHANNEL_IDS = []
+for x in raw_ids.split(","):
+    x = x.strip()
+    if x.isdigit() or (x.startswith("-100") and x[1:].isdigit()):
+        CHANNEL_IDS.append(int(x))
+
+if not CHANNEL_IDS:
+    raise ValueError("CHANNEL_IDS not set correctly. Must be numeric IDs.")
 
 bot = Bot(token=BOT_TOKEN)
 
@@ -33,7 +42,6 @@ def get_messages():
 # ---------------------
 def delete_later(chat_id, message_id, delay=600):
     """Delete message after delay (600 sec = 10 minutes)"""
-
     def worker():
         time.sleep(delay)
         try:
@@ -41,7 +49,6 @@ def delete_later(chat_id, message_id, delay=600):
             print(f"Deleted message {message_id} from {chat_id}")
         except Exception as e:
             print(f"Failed to delete message {message_id}: {e}")
-
     threading.Thread(target=worker, daemon=True).start()
 
 # ---------------------
@@ -49,6 +56,10 @@ def delete_later(chat_id, message_id, delay=600):
 # ---------------------
 def send_message():
     messages = get_messages()
+    if not messages:
+        print("No messages found to send.")
+        return
+
     text = random.choice(messages)
 
     for channel_id in CHANNEL_IDS:
@@ -59,13 +70,13 @@ def send_message():
             # Delete the message after 10 minutes
             delete_later(channel_id, msg.message_id, delay=600)
 
-        except error.BadRequest as e:
+        except error.TelegramError as e:
             print(f"Failed to send to {channel_id}: {e}")
 
 # ---------------------
 # Scheduler
 # ---------------------
-schedule.every(1).minutes.do(send_message)
+schedule.every(10).minutes.do(send_message)  # Change interval if needed
 
 def run_schedule():
     while True:
@@ -85,8 +96,5 @@ def home():
 # Start everything
 # ---------------------
 if __name__ == "__main__":
-    # Start scheduler thread
     threading.Thread(target=run_schedule, daemon=True).start()
-
-    # Start Waitress server
     serve(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
