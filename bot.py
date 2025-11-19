@@ -65,7 +65,7 @@ def send_message():
 # ---------------------
 # Scheduler
 # ---------------------
-schedule.every(99).minutes.do(send_message)
+schedule.every(1).minutes.do(send_message)
 
 def run_schedule():
     while True:
